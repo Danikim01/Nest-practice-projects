@@ -6,3 +6,6 @@
 
 1. Levantar la base de datos
 ```docker-compose up -d```
+
+2. Correr el servidor
+```npm run start:dev```

@@ -4,8 +4,12 @@
 
 # TesloDB API
 
-1. Levantar la base de datos
+1. Clonar el proyecto
+2. ```npm / yarn install```
+3. Clonar el archivo ```.env.template``` y renombrarlo a ```.env```
+4. Cambiar las variables de entorno
+5. Levantar la base de datos
 ```docker-compose up -d```
-
-2. Correr el servidor
-```npm run start:dev```
+6. Ejecutar SEED de forma local: ```http://localhost:3000/api/seed```
+7. Correr el servidor
+```npm run start:dev / yarn start:dev```

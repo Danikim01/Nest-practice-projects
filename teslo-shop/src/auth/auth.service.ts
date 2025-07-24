@@ -9,12 +9,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities';
 import * as bcryptjs from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly jwtService: JwtService,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -50,8 +53,42 @@ export class AuthService {
     if (!bcryptjs.compareSync(password, user.password))
       throw new UnauthorizedException('Credentials are not valid');
 
-    //TODO: retornar JWT token de acceso
-    return user;
+    const payload: JwtPayload = { id: user.id, email: user.email };
+    const tokens = this.getJwtToken(payload);
+
+    return {
+      user: { id: user.id, email: user.email },
+      ...tokens,
+    };
+  }
+
+  async refreshToken(refreshToken: string) {
+    try {
+      const payload = this.jwtService.verify(refreshToken);
+      const user = await this.userRepository.findOne({
+        where: { email: payload.email },
+        select: { id: true, email: true, isActive: true },
+      });
+
+      if (!user) throw new UnauthorizedException('User not found');
+      if (!user.isActive) throw new UnauthorizedException('User is not active');
+
+      const newPayload: JwtPayload = { id: user.id, email: user.email };
+      return this.getJwtToken(newPayload);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  private getJwtToken(payload: JwtPayload) {
+    return {
+      access_token: this.jwtService.sign(payload, {
+        expiresIn: '15m', // Access token corto
+      }),
+      refresh_token: this.jwtService.sign(payload, {
+        expiresIn: '7d', // Refresh token largo
+      }),
+    };
   }
 
   private handleDBErrors(errors: any): never {

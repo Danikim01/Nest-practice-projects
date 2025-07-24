@@ -1,14 +1,10 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, SetMetadata } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto, LoginUserDto, RefreshTokenDto } from './dto';
+import { AuthGuard } from '@nestjs/passport';
+import { GetUser, GetRawHeaders } from './decorators';
+import { User } from './entities';
+import { UserRoleGuard } from './guards/user-role/user-role.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -22,6 +18,28 @@ export class AuthController {
   @Post('login')
   login(@Body() loginDto: LoginUserDto) {
     return this.authService.login(loginDto);
+  }
+
+  @Get('private')
+  @UseGuards(AuthGuard())
+  testingPrivateRoute(
+    @GetUser() user: User,
+    @GetUser('email') userEmail: string,
+    @GetRawHeaders() rawHeaders: string[],
+  ) {
+    return {
+      message: 'This is a private route',
+      user,
+      userEmail,
+      rawHeaders,
+    };
+  }
+
+  @Get('private2')
+  @SetMetadata('roles', ['admin', 'super-user'])
+  @UseGuards(AuthGuard(), UserRoleGuard)
+  testingPrivateRoute2(@GetUser() user: User) {
+    return { message: 'This is a private route 2', user };
   }
 
   @Post('refresh')

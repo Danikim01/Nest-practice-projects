@@ -98,4 +98,11 @@ export class AuthService {
       'Something went wrong, check server logs',
     );
   }
+
+  async checkAuthStatus(user: User) {
+    return {
+      ...user,
+      token: this.getJwtToken({ id: user.id }),
+    };
+  }
 }

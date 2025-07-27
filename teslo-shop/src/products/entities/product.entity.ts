@@ -5,8 +5,10 @@ import {
   Entity,
   OneToMany,
   PrimaryGeneratedColumn,
+  ManyToOne,
 } from 'typeorm';
 import { ProductImage } from './product-image.entity';
+import { User } from 'src/auth/entities';
 
 @Entity({ name: 'products' })
 export class Product {
@@ -35,12 +37,14 @@ export class Product {
   tags: string[];
 
   //Aca se define una RELACION (entre Product y ProductImage) no una COLUMNA.
-  @OneToMany(
-    () => ProductImage,
-    (productImage) => productImage.product,
-    { cascade: true, eager: true }
-  )
+  @OneToMany(() => ProductImage, (productImage) => productImage.product, {
+    cascade: true,
+    eager: true,
+  })
   images?: ProductImage[];
+
+  @ManyToOne(() => User, (user) => user.products)
+  user: User;
 
   @BeforeInsert()
   checkSlugInsert() {

@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
-import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateOrderDto } from '../../../client-gateway/src/orders/dto/create-order.dto';
 import { PrismaClient } from '@prisma/client';
 
 @Injectable()

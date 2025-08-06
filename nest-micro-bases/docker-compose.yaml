@@ -1,0 +1,57 @@
+version: "3"
+
+services:
+  nats-server:
+    image: nats:latest
+    ports:
+      - 8222:8222
+  client-gateway:
+    build: ./client-gateway
+    ports:
+      - 3000:3000
+    volumes:
+      - ./client-gateway/src:/usr/src/app/src
+    command: npm run start:dev
+    environment:
+      - PORT=3000
+      - NATS_SERVERS=nats://nats-server:4222
+
+  product-ms:
+    build: ./product-ms
+    volumes:
+      - ./product-ms/src:/usr/src/app/src
+    command: npm run start:dev
+    environment:
+      - PORT=3001
+      - NATS_SERVERS=nats://nats-server:4222
+      - DATABASE_URL=file:./dev.db
+
+  orders-ms:
+    build: ./orders-ms
+    depends_on:
+      postgres-orders:
+        condition: service_healthy
+    command: npm run start:dev
+    volumes:
+      - ./orders-ms/src:/usr/src/app/src
+    environment:
+      - PORT=3002
+      - NATS_SERVERS=nats://nats-server:4222
+      - DATABASE_URL=postgresql://postgres:123456@postgres-orders:5432/ordersdb?schema=public
+
+  postgres-orders:
+    container_name: postgres-orders
+    image: postgres:16.2
+    restart: always
+    volumes:
+      - ./orders-ms/orders-db-data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

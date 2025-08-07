@@ -6,6 +6,7 @@ import {
   ChangeOrderStatusDto,
   CreateOrderDto,
 } from './dto';
+import { RpcException } from '@nestjs/microservices';
 
 @Controller()
 export class OrdersController {
@@ -17,8 +18,13 @@ export class OrdersController {
   }
 
   @MessagePattern('find-all-orders')
-  findAll(@Payload() orderPaginationDto: OrderPaginationDto) {
-    return this.ordersService.findAll(orderPaginationDto);
+  async findAll(@Payload() orderPaginationDto: OrderPaginationDto) {
+    try {
+      const products = await this.ordersService.findAll(orderPaginationDto);
+      return products;
+    } catch (error) {
+      throw new RpcException(error);
+    }
   }
 
   @MessagePattern('find-one-order')

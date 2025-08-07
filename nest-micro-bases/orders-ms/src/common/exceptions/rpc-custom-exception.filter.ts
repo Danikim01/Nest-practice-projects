@@ -1,15 +1,21 @@
-import { Catch, ArgumentsHost, ExceptionFilter } from '@nestjs/common';
+import { Catch, ExceptionFilter } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
-import { Response } from 'express';
 
 @Catch(RpcException)
 export class RpcCustomExceptionFilter implements ExceptionFilter {
-  catch(exception: RpcException, host: ArgumentsHost) {
-    const ctx = host.switchToHttp();
-    const response = ctx.getResponse();
-
+  catch(exception: RpcException) {
     const rpcError = exception.getError();
-    console.log(rpcError);
+
+    // Para microservicios, simplemente devolvemos el error estructurado
+    if (rpcError.toString().includes('Empty response')) {
+      return {
+        status: 500,
+        message: rpcError
+          .toString()
+          .substring(0, rpcError.toString().indexOf('(') - 1),
+      };
+    }
+
     // Manejar errores con estructura de objeto
     if (
       typeof rpcError === 'object' &&
@@ -17,13 +23,16 @@ export class RpcCustomExceptionFilter implements ExceptionFilter {
       'message' in rpcError
     ) {
       const status = isNaN(+rpcError.status) ? 400 : +rpcError.status;
-      return response.status(status).json(rpcError);
+      return {
+        status,
+        message: rpcError.message,
+      };
     }
 
     // Error por defecto
-    response.status(400).json({
+    return {
       status: 400,
       message: rpcError,
-    });
+    };
   }
 }

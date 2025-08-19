@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import Stripe from 'stripe';
 import { envs } from 'src/config';
 import { PaymentSessionDto } from './dto/payment-session.dto';
+import { Request, Response } from 'express';
 
 @Injectable()
 export class PaymentsService {
@@ -32,5 +33,38 @@ export class PaymentsService {
       cancel_url: `http://localhost:${envs.port}/payments/cancel`,
     });
     return session;
+  }
+
+  async stripeWebhook(req: Request, res: Response) {
+    const sig = req.headers['stripe-signature'] as string;
+
+    let event: Stripe.Event;
+
+    try {
+      event = this.stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        envs.stripeWebhookSecret,
+      );
+    } catch (error: any) {
+      console.error('Webhook signature verification failed:', error.message);
+      return res.status(400).send(`Webhook Error: ${error.message}`);
+    }
+
+    switch (event.type) {
+      case 'charge.succeeded':
+        const charge = event.data.object as Stripe.Charge;
+        console.log(event);
+        console.log('Charge succeeded:', charge.id);
+        break;
+      case 'charge.failed':
+        const failedCharge = event.data.object as Stripe.Charge;
+        console.log('Charge failed:', failedCharge.id);
+        break;
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+    }
+
+    return res.status(200).json({ received: true });
   }
 }

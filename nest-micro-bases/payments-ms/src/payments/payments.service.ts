@@ -25,12 +25,14 @@ export class PaymentsService {
 
     const session = await this.stripe.checkout.sessions.create({
       payment_intent_data: {
-        metadata: {},
+        metadata: {
+          orderId: body.orderId,
+        },
       },
       line_items: lineItems,
       mode: 'payment',
-      success_url: `http://localhost:${envs.port}/payments/success`,
-      cancel_url: `http://localhost:${envs.port}/payments/cancel`,
+      success_url: envs.stripeSuccessUrl,
+      cancel_url: envs.stripeCancelUrl,
     });
     return session;
   }
@@ -54,8 +56,9 @@ export class PaymentsService {
     switch (event.type) {
       case 'charge.succeeded':
         const charge = event.data.object as Stripe.Charge;
-        console.log(event);
-        console.log('Charge succeeded:', charge.id);
+        console.log({
+          metadata: charge.metadata,
+        });
         break;
       case 'charge.failed':
         const failedCharge = event.data.object as Stripe.Charge;

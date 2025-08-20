@@ -6,8 +6,8 @@ import {
   ChangeOrderStatusDto,
   CreateOrderDto,
 } from './dto';
-import { RpcException } from '@nestjs/microservices';
-
+import { RpcException, EventPattern } from '@nestjs/microservices';
+import { PaidOrderDto } from './dto';
 @Controller()
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
@@ -41,5 +41,10 @@ export class OrdersController {
   @MessagePattern('change-order-status')
   changeOrderStatus(@Payload() changeOrderStatusDto: ChangeOrderStatusDto) {
     return this.ordersService.changeOrderStatus(changeOrderStatusDto);
+  }
+
+  @EventPattern('payment.success')
+  paidOrder(@Payload() paidOrderDto: PaidOrderDto) {
+    return this.ordersService.paidOrder(paidOrderDto);
   }
 }
